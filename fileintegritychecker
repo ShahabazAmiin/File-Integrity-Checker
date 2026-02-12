@@ -1,0 +1,53 @@
+import hashlib
+import os
+import time
+
+def calculate_hash(file_path):
+    sha256 = hashlib.sha256()
+    try:
+        with open(file_path, 'rb') as f:
+            while True:
+                chunk = f.read(4096)
+                if not chunk:
+                    break
+                sha256.update(chunk)
+        return sha256.hexdigest()
+    except:
+        return None
+
+
+def create_baseline(directory):
+    baseline = {}
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            path = os.path.join(root, file)
+            baseline[path] = calculate_hash(path)
+    return baseline
+
+
+def monitor_files(directory):
+    print(f"\nCreating baseline for {directory}...\n")
+    baseline = create_baseline(directory)
+    print("Monitoring started...\n")
+
+    while True:
+        time.sleep(5)
+        current_state = create_baseline(directory)
+
+        for path, hash_value in current_state.items():
+            if path not in baseline:
+                print(f"[NEW FILE] {path}")
+
+            elif baseline[path] != hash_value:
+                print(f"[MODIFIED] {path}")
+
+        for path in baseline:
+            if path not in current_state:
+                print(f"[DELETED] {path}")
+
+        baseline = current_state
+
+
+if __name__ == "__main__":
+    directory = input("Enter directory to monitor: ")
+    monitor_files(directory)
